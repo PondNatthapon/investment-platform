@@ -2,7 +2,7 @@ import { getPortfolioValuation } from "@/lib/portfolio/service";
 import { PortfolioChart } from "@/components/portfolio-chart";
 import { SectionHeader } from "@/components/ui/section-header";
 import { StatCard } from "@/components/ui/stat-card";
-
+import { HoldingsTable } from "@/components/holdings-table";
 
 export default async function DashboardPage({
   searchParams,
@@ -117,71 +117,13 @@ export default async function DashboardPage({
           <PortfolioChart positions={positions} />
         </section>
 
-        <section className="overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/70">
-          <div className="border-b border-zinc-800 px-6 py-5">
-            <h2 className="text-lg font-semibold">
-              Holdings
-            </h2>
-          </div>
+        <section className="space-y-5">
+          <SectionHeader
+            title="Holdings"
+            description={`${positions.length} active securities`}
+          />
 
-          <div className="mt-6 overflow-hidden rounded-xl border border-white/6">
-            <div className="hidden grid-cols-5 border-b border-white/6 px-5 py-3 text-xs uppercase tracking-wider text-zinc-600 md:grid">
-              <div>Security</div>
-              <div>Shares</div>
-              <div>Avg. Cost</div>
-              <div>Cost Basis</div>
-              <div>Realized P/L</div>
-            </div>
-
-            <div className="divide-y divide-white/6">
-              {positions.map((position) => (
-                <div
-                  key={position.securityId}
-                  className="grid gap-4 px-5 py-5 md:grid-cols-5 md:items-center"
-                >
-                  <div>
-                    <p className="font-semibold text-zinc-100">
-                      {position.symbol}
-                    </p>
-
-                    <p className="mt-1 text-xs text-zinc-500">
-                      {position.currency}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-zinc-200">
-                      {position.quantity}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm text-zinc-200">
-                      ${position.averageCost}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p className="text-sm font-medium text-zinc-100">
-                      ${position.costBasis}
-                    </p>
-                  </div>
-
-                  <div>
-                    <p
-                      className={
-                        Number(position.realizedPnl) >= 0
-                          ? "text-sm font-medium text-emerald-400"
-                          : "text-sm font-medium text-rose-400"
-                      }
-                    >
-                      ${position.realizedPnl}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <HoldingsTable positions={positions} />
         </section>
       </div>
     </main>
