@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Receipt,
   Settings,
-  WalletCards,
 } from "lucide-react";
 
 import { getAccountsForUser } from "@/lib/account/service";
@@ -26,9 +25,8 @@ const navigation = [
   },
   {
     label: "Portfolio",
-    href: "#",
-    icon: WalletCards,
-    soon: true,
+    href: "/dashboard/transactions",
+    icon: Receipt,
   },
   {
     label: "Transactions",
