@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { getPortfolio } from "@/lib/portfolio/service";
+import { getPortfolioValuation } from "@/lib/portfolio/service";
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    const portfolio = await getPortfolio(accountId);
+    const portfolio = await getPortfolioValuation(accountId);
 
     return NextResponse.json({
       accountId,

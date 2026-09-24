@@ -1,4 +1,4 @@
-import { getPortfolio } from "@/lib/portfolio/service";
+import { getPortfolioValuation } from "@/lib/portfolio/service";
 import { PortfolioChart } from "@/components/portfolio-chart";
 import { SectionHeader } from "@/components/ui/section-header";
 import { StatCard } from "@/components/ui/stat-card";
@@ -17,7 +17,19 @@ export default async function DashboardPage({
     params.accountId ??
     "31e0cddc-5ef8-4c28-9c4a-8bf236bc41c7";
 
-  const positions = await getPortfolio(accountId);
+  const positions = await getPortfolioValuation(accountId);
+
+  const totalCurrentValue = positions.reduce(
+    (sum, position) =>
+      sum + Number(position.currentValue),
+    0,
+  );
+
+  const totalUnrealizedPnl = positions.reduce(
+    (sum, position) =>
+      sum + Number(position.unrealizedPnl),
+    0,
+  );
 
   const totalCostBasis = positions.reduce(
     (sum, position) => sum + Number(position.costBasis),
@@ -42,14 +54,39 @@ export default async function DashboardPage({
           </h1>
         </header>
 
-        <section className="grid gap-4 md:grid-cols-3">
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard
+            label="Current Value"
+            value={`$${totalCurrentValue.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+            })}`}
+            description="Current market value"
+          />
+
           <StatCard
             label="Cost Basis"
             value={`$${totalCostBasis.toLocaleString("en-US", {
               minimumFractionDigits: 2,
             })}`}
             description="Total recorded investment cost"
-        />
+          />
+
+          <StatCard
+            label="Unrealized P/L"
+            value={`$${totalUnrealizedPnl.toLocaleString("en-US", {
+              minimumFractionDigits: 2,
+            })}`}
+            description={
+              totalUnrealizedPnl >= 0
+                ? "Unrealized profit"
+                : "Unrealized loss"
+            }
+            trend={
+              totalUnrealizedPnl >= 0
+                ? "positive"
+                : "negative"
+            }
+          />
 
           <StatCard
             label="Realized P/L"
@@ -61,13 +98,11 @@ export default async function DashboardPage({
                 ? "Realized profit"
                 : "Realized loss"
             }
-            trend={totalRealizedPnl >= 0 ? "positive" : "negative"}
-          />
-
-          <StatCard
-            label="Positions"
-            value={positions.length.toString()}
-            description="Active securities"
+            trend={
+              totalRealizedPnl >= 0
+                ? "positive"
+                : "negative"
+            }
           />
         </section>
 
