@@ -1,11 +1,23 @@
 import { getPortfolio } from "@/lib/portfolio/service";
 import { PortfolioChart } from "@/components/portfolio-chart";
+import { SectionHeader } from "@/components/ui/section-header";
+import { StatCard } from "@/components/ui/stat-card";
 
-const DEMO_ACCOUNT_ID =
-  "31e0cddc-5ef8-4c28-9c4a-8bf236bc41c7";
 
-export default async function DashboardPage() {
-  const positions = await getPortfolio(DEMO_ACCOUNT_ID);
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{
+    accountId?: string;
+  }>;
+}) {
+  const params = await searchParams;
+
+  const accountId =
+    params.accountId ??
+    "31e0cddc-5ef8-4c28-9c4a-8bf236bc41c7";
+
+  const positions = await getPortfolio(accountId);
 
   const totalCostBasis = positions.reduce(
     (sum, position) => sum + Number(position.costBasis),
@@ -31,35 +43,40 @@ export default async function DashboardPage() {
         </header>
 
         <section className="grid gap-4 md:grid-cols-3">
-          <SummaryCard
+          <StatCard
             label="Cost Basis"
             value={`$${totalCostBasis.toLocaleString("en-US", {
               minimumFractionDigits: 2,
             })}`}
-          />
+            description="Total recorded investment cost"
+        />
 
-          <SummaryCard
+          <StatCard
             label="Realized P/L"
             value={`$${totalRealizedPnl.toLocaleString("en-US", {
               minimumFractionDigits: 2,
             })}`}
+            description={
+              totalRealizedPnl >= 0
+                ? "Realized profit"
+                : "Realized loss"
+            }
+            trend={totalRealizedPnl >= 0 ? "positive" : "negative"}
           />
 
-          <SummaryCard
+          <StatCard
             label="Positions"
             value={positions.length.toString()}
+            description="Active securities"
           />
         </section>
 
         <section className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-6">
           <div className="mb-6">
-            <h2 className="text-lg font-semibold">
-              Cost Basis Allocation
-            </h2>
-
-            <p className="mt-1 text-sm text-zinc-400">
-              Allocation based on recorded transaction cost.
-            </p>
+            <SectionHeader
+              title="Cost Basis Allocation"
+              description="Allocation based on recorded transaction cost."
+            />
           </div>
 
           <PortfolioChart positions={positions} />
@@ -72,76 +89,66 @@ export default async function DashboardPage() {
             </h2>
           </div>
 
-          <div className="divide-y divide-zinc-800">
-            {positions.map((position) => (
-              <div
-                key={position.securityId}
-                className="grid gap-4 px-6 py-5 md:grid-cols-5"
-              >
-                <div>
-                  <p className="font-semibold">{position.symbol}</p>
-                  <p className="text-xs text-zinc-500">
-                    {position.currency}
-                  </p>
+          <div className="mt-6 overflow-hidden rounded-xl border border-white/6">
+            <div className="hidden grid-cols-5 border-b border-white/6 px-5 py-3 text-xs uppercase tracking-wider text-zinc-600 md:grid">
+              <div>Security</div>
+              <div>Shares</div>
+              <div>Avg. Cost</div>
+              <div>Cost Basis</div>
+              <div>Realized P/L</div>
+            </div>
+
+            <div className="divide-y divide-white/6">
+              {positions.map((position) => (
+                <div
+                  key={position.securityId}
+                  className="grid gap-4 px-5 py-5 md:grid-cols-5 md:items-center"
+                >
+                  <div>
+                    <p className="font-semibold text-zinc-100">
+                      {position.symbol}
+                    </p>
+
+                    <p className="mt-1 text-xs text-zinc-500">
+                      {position.currency}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-zinc-200">
+                      {position.quantity}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm text-zinc-200">
+                      ${position.averageCost}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-sm font-medium text-zinc-100">
+                      ${position.costBasis}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p
+                      className={
+                        Number(position.realizedPnl) >= 0
+                          ? "text-sm font-medium text-emerald-400"
+                          : "text-sm font-medium text-rose-400"
+                      }
+                    >
+                      ${position.realizedPnl}
+                    </p>
+                  </div>
                 </div>
-
-                <Metric
-                  label="Shares"
-                  value={position.quantity}
-                />
-
-                <Metric
-                  label="Average Cost"
-                  value={`$${position.averageCost}`}
-                />
-
-                <Metric
-                  label="Cost Basis"
-                  value={`$${position.costBasis}`}
-                />
-
-                <Metric
-                  label="Realized P/L"
-                  value={`$${position.realizedPnl}`}
-                />
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </section>
       </div>
     </main>
-  );
-}
-
-function SummaryCard({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/70 p-6">
-      <p className="text-sm text-zinc-400">{label}</p>
-
-      <p className="mt-2 text-2xl font-semibold tracking-tight">
-        {value}
-      </p>
-    </div>
-  );
-}
-
-function Metric({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div>
-      <p className="text-xs text-zinc-500">{label}</p>
-      <p className="mt-1 text-sm font-medium">{value}</p>
-    </div>
   );
 }
