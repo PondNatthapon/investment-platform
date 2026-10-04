@@ -1,17 +1,13 @@
 import { SectionHeader } from "@/components/ui/section-header";
 import { TransactionForm } from "@/components/transactions/transaction-form";
 
-import { getAccountsForUser } from "@/lib/account/service";
 import { getTransactions } from "@/lib/transaction/service";
 
 import { db } from "@/db";
 import { securities } from "@/db/schema";
 
-const DEMO_USER_ID =
-  "806d7566-d20d-4a1c-8ca4-42b636b26852";
-
-const DEFAULT_ACCOUNT_ID =
-  "31e0cddc-5ef8-4c28-9c4a-8bf236bc41c7";
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { getCurrentAccount } from "@/lib/account/context";
 
 export default async function TransactionsPage({
   searchParams,
@@ -23,13 +19,14 @@ export default async function TransactionsPage({
 }) {
   const params = await searchParams;
 
-  const accounts =
-    await getAccountsForUser(DEMO_USER_ID);
+  const user = await getCurrentUser();
 
-  const accountId =
-    params.accountId ??
-    accounts[0]?.id ??
-    DEFAULT_ACCOUNT_ID;
+  const account = await getCurrentAccount(
+    user.id,
+    params.accountId,
+  );
+
+  const accountId = account.id;
 
   const [transactions, securitiesList] =
     await Promise.all([
@@ -37,12 +34,7 @@ export default async function TransactionsPage({
       db.select().from(securities),
     ]);
 
-  const selectedAccount =
-    accounts.find(
-      (account) => account.id === accountId,
-    ) ?? accounts[0];
-
-  if (!selectedAccount) {
+  if (!account) {
     return (
       <main className="mx-auto max-w-7xl px-6 py-10">
         No investment account found.
@@ -61,7 +53,7 @@ export default async function TransactionsPage({
       <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
         <div>
           <p className="text-sm text-zinc-500">
-            {selectedAccount.name}
+            {account.name}
           </p>
 
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
@@ -79,7 +71,7 @@ export default async function TransactionsPage({
           </p>
 
           <p className="mt-1 text-sm font-medium">
-            {selectedAccount.broker}
+            {account.broker}
           </p>
         </div>
       </div>

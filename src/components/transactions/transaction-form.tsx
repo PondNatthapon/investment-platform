@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 
 import {
-  addTransaction,
+  createTransactionAction,
   type TransactionActionState,
 } from "@app/dashboard/transactions/actions";
 
@@ -26,7 +26,7 @@ export function TransactionForm({
 }) {
   const [state, formAction, isPending] =
     useActionState(
-      addTransaction,
+      createTransactionAction,
       initialState,
     );
 

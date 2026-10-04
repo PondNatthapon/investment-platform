@@ -3,47 +3,39 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { createTransaction } from "@/lib/transaction/service";
+import { getCurrentUser } from "@/lib/auth/current-user";
 import { createTransactionSchema } from "@/lib/transaction/schema";
-
-const DEMO_USER_ID =
-  "806d7566-d20d-4a1c-8ca4-42b636b26852";
+import { createTransaction } from "@/lib/transaction/service";
 
 export type TransactionActionState = {
   error?: string;
 };
 
-export async function addTransaction(
-  _previousState: TransactionActionState,
+export async function createTransactionAction(
+  _prevState: TransactionActionState,
   formData: FormData,
 ): Promise<TransactionActionState> {
-  const rawInput = {
+  const parsed = createTransactionSchema.safeParse({
     accountId: formData.get("accountId"),
     securityId: formData.get("securityId"),
     type: formData.get("type"),
     quantity: formData.get("quantity"),
     price: formData.get("price"),
-    fee: formData.get("fee"),
+    fee: formData.get("fee") || "0",
     transactionAt: formData.get("transactionAt"),
-    notes: formData.get("notes"),
-  };
-
-  const parsed = createTransactionSchema.safeParse(
-    rawInput,
-  );
+    notes: formData.get("notes") || undefined,
+  });
 
   if (!parsed.success) {
     return {
-      error: parsed.error.issues[0]?.message ??
-        "Invalid transaction data.",
+      error: parsed.error.issues[0]?.message ?? "Invalid transaction data.",
     };
   }
 
   try {
-    await createTransaction(
-      DEMO_USER_ID,
-      parsed.data,
-    );
+    const user = await getCurrentUser();
+
+    await createTransaction(user.id, parsed.data);
   } catch (error) {
     return {
       error:

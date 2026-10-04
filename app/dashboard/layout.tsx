@@ -9,13 +9,11 @@ import {
   Settings,
 } from "lucide-react";
 
-import { getAccountsForUser } from "@/lib/account/service";
 import { AccountSelector } from "@/components/account-selector";
 import { Suspense } from "react";
-
-const DEMO_USER_ID =
-  "806d7566-d20d-4a1c-8ca4-42b636b26852";
-
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { getUserAccounts } from "@/lib/account/repository";
+  
 const navigation = [
   {
     label: "Dashboard",
@@ -53,7 +51,8 @@ export default async function DashboardLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const accounts = await getAccountsForUser(DEMO_USER_ID);
+  const user = await getCurrentUser();
+  const accounts = await getUserAccounts(user.id);
 
   return (
     <div className="min-h-screen bg-[#09090b] text-zinc-100">

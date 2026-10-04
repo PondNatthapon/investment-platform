@@ -1,11 +1,51 @@
 import "dotenv/config";
-import { pool } from "@/db";
+import { db, pool } from "@/db";
 
 import { getAccountTransactions } from "./repository";
 import { calculatePositions } from "./engine";
 
+import { and, asc, eq } from "drizzle-orm";
+
+import { accounts, users } from "@/db/schema";
+
 async function main() {
-  const accountId = "31e0cddc-5ef8-4c28-9c4a-8bf236bc41c7";
+  const email = process.env.LOCAL_USER_EMAIL;
+
+  if (!email) {
+    throw new Error("LOCAL_USER_EMAIL is not configured.");
+  }
+
+  const [user] = await db
+    .select({
+      id: users.id,
+    })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+
+  if (!user) {
+    throw new Error(`Local user not found: ${email}`);
+  }
+
+  const [account] = await db
+    .select({
+      id: accounts.id,
+    })
+    .from(accounts)
+    .where(
+      and(
+        eq(accounts.userId, user.id),
+        eq(accounts.isActive, true),
+      ),
+    )
+    .orderBy(asc(accounts.name))
+    .limit(1);
+
+  if (!account) {
+    throw new Error(`No active investment account found for ${email}`);
+  }
+
+  const accountId = account.id;
 
   const transactions = await getAccountTransactions(accountId);
 

@@ -1,0 +1,54 @@
+npm notice run investment-platform@0.1.0 build
+npm notice run next build
+▲ Next.js 16.3.5 (Turbopack)
+- Environments: .env
+✓ Running next.config.ts took 121ms
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 1643ms
+  Running TypeScript ...
+  Finished TypeScript in 1878ms ...
+  Collecting page data using 8 workers ...
+◇ injected env (0) from .env
+◇ injected env (0) from .env
+◇ injected env (0) from .env
+Error: Failed to collect configuration for /dashboard
+    at ignore-listed frames {
+  [cause]: Error: Failed query: select "id", "name", "email", "timezone" from "users" where "users"."email" = $1 limit $2
+  params: demo@investment.local,1
+      at async h (src/lib/auth/current-user.ts:17:18)
+      at async (app/dashboard/layout.tsx:18:14)
+    15 |   }
+    16 |
+  > 17 |   const [user] = await db
+       |                  ^
+    18 |     .select({
+    19 |       id: users.id,
+    20 |       name: users.name, {
+    query: 'select "id", "name", "email", "timezone" from "users" where "users"."email" = $1 limit $2',
+    params: [ 'demo@investment.local', 1 ],
+    [cause]: Error: connect ECONNREFUSED 127.0.0.1:5432
+        at <unknown> (Error: connect ECONNREFUSED 127.0.0.1:5432)
+        at async h (src/lib/auth/current-user.ts:17:18)
+        at async (app/dashboard/layout.tsx:18:14)
+      15 |   }
+      16 |
+    > 17 |   const [user] = await db
+         |                  ^
+      18 |     .select({
+      19 |       id: users.id,
+      20 |       name: users.name, {
+      errno: -111,
+      code: 'ECONNREFUSED',
+      syscall: 'connect',
+      address: '127.0.0.1',
+      port: 5432
+    }
+  }
+}
+
+> Build error occurred
+Error: Failed to collect page data for /dashboard
+    at ignore-listed frames {
+  type: 'Error'
+}

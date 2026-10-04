@@ -1,8 +1,11 @@
-import { getPortfolioValuation } from "@/lib/portfolio/service";
+import { HoldingsTable } from "@/components/holdings-table";
 import { PortfolioChart } from "@/components/portfolio-chart";
 import { SectionHeader } from "@/components/ui/section-header";
 import { StatCard } from "@/components/ui/stat-card";
-import { HoldingsTable } from "@/components/holdings-table";
+
+import { getCurrentUser } from "@/lib/auth/current-user";
+import { getCurrentAccount } from "@/lib/account/context";
+import { getPortfolioValuation } from "@/lib/portfolio/service";
 
 export default async function DashboardPage({
   searchParams,
@@ -13,11 +16,16 @@ export default async function DashboardPage({
 }) {
   const params = await searchParams;
 
-  const accountId =
-    params.accountId ??
-    "31e0cddc-5ef8-4c28-9c4a-8bf236bc41c7";
+  const user = await getCurrentUser();
 
-  const positions = await getPortfolioValuation(accountId);
+  const account = await getCurrentAccount(
+    user.id,
+    params.accountId,
+  );
+
+  const positions = await getPortfolioValuation(
+    account.id,
+  );
 
   const totalCurrentValue = positions.reduce(
     (sum, position) =>
@@ -32,12 +40,14 @@ export default async function DashboardPage({
   );
 
   const totalCostBasis = positions.reduce(
-    (sum, position) => sum + Number(position.costBasis),
+    (sum, position) =>
+      sum + Number(position.costBasis),
     0,
   );
 
   const totalRealizedPnl = positions.reduce(
-    (sum, position) => sum + Number(position.realizedPnl),
+    (sum, position) =>
+      sum + Number(position.realizedPnl),
     0,
   );
 
@@ -46,36 +56,49 @@ export default async function DashboardPage({
       <div className="mx-auto max-w-7xl space-y-8">
         <header>
           <p className="text-sm font-medium text-zinc-400">
-            Investment Platform
+            {account.broker}
           </p>
 
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-            Portfolio Dashboard
+            {account.name}
           </h1>
+
+          <p className="mt-2 text-sm text-zinc-500">
+            Portfolio Dashboard · {account.baseCurrency}
+          </p>
         </header>
 
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <StatCard
             label="Current Value"
-            value={`$${totalCurrentValue.toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-            })}`}
+            value={`$${totalCurrentValue.toLocaleString(
+              "en-US",
+              {
+                minimumFractionDigits: 2,
+              },
+            )}`}
             description="Current market value"
           />
 
           <StatCard
             label="Cost Basis"
-            value={`$${totalCostBasis.toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-            })}`}
+            value={`$${totalCostBasis.toLocaleString(
+              "en-US",
+              {
+                minimumFractionDigits: 2,
+              },
+            )}`}
             description="Total recorded investment cost"
           />
 
           <StatCard
             label="Unrealized P/L"
-            value={`$${totalUnrealizedPnl.toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-            })}`}
+            value={`$${totalUnrealizedPnl.toLocaleString(
+              "en-US",
+              {
+                minimumFractionDigits: 2,
+              },
+            )}`}
             description={
               totalUnrealizedPnl >= 0
                 ? "Unrealized profit"
@@ -90,9 +113,12 @@ export default async function DashboardPage({
 
           <StatCard
             label="Realized P/L"
-            value={`$${totalRealizedPnl.toLocaleString("en-US", {
-              minimumFractionDigits: 2,
-            })}`}
+            value={`$${totalRealizedPnl.toLocaleString(
+              "en-US",
+              {
+                minimumFractionDigits: 2,
+              },
+            )}`}
             description={
               totalRealizedPnl >= 0
                 ? "Realized profit"
