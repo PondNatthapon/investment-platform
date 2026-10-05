@@ -1,12 +1,18 @@
 import "server-only";
 
-import { getAccountTransactions } from "./repository";
-import { calculatePositions } from "./engine";
-import { calculateValuation } from "./valuation";
-
+import { normalizeCurrencyCode } from "@/lib/currency/currency";
+import { requireAccountAccess } from "@/lib/account/access";
+import type { FxPair, FxQuote, FxRateProvider } from "@/lib/fx/types";
+import { getFxRateProvider } from "@/lib/fx/provider";
 import { getMarketDataProvider } from "@/lib/market-data/provider";
 import type { MarketDataProvider } from "@/lib/market-data/types";
-import { requireAccountAccess } from "@/lib/account/access";
+
+import { getAccountTransactions } from "./repository";
+import { calculatePositions } from "./engine";
+import {
+  calculateValuation,
+  convertValuationToBaseCurrency,
+} from "./valuation";
 
 export type PortfolioPositionDTO = {
   securityId: string;
@@ -19,6 +25,22 @@ export type PortfolioPositionDTO = {
 };
 
 export type PortfolioValuationDTO = PortfolioPositionDTO & {
+  nativeCurrency: string;
+  nativeMarketValue: string;
+  nativeCostBasis: string;
+  nativeUnrealizedPnl: string;
+  baseCurrency: string;
+  baseMarketValue: string | null;
+  conversionStatus: "NOT_REQUIRED" | "CONVERTED" | "UNAVAILABLE";
+  conversionStatusReason?: "MISSING_RATE" | "INVALID_RATE" | "INVALID_CURRENCY";
+  fxQuote: {
+    baseCurrency: string;
+    quoteCurrency: string;
+    rate: string;
+    source: string;
+    asOf: string;
+    direction: "direct" | "inverse";
+  } | null;
   currentPrice: string;
   currentValue: string;
   unrealizedPnl: string;
@@ -51,8 +73,9 @@ export async function getPortfolioValuation(
   userId: string,
   accountId: string,
   provider: MarketDataProvider = getMarketDataProvider(),
+  fxProvider: FxRateProvider = getFxRateProvider(),
 ): Promise<PortfolioValuationDTO[]> {
-  await requireAccountAccess(userId, accountId);
+  const account = await requireAccountAccess(userId, accountId);
   const transactions =
     await getAccountTransactions(accountId);
 
@@ -73,23 +96,83 @@ export async function getPortfolioValuation(
     prices,
   );
 
-  return valuedPositions.map((position) => ({
-    securityId: position.securityId,
-    symbol: position.symbol,
-    currency: position.currency,
+  const fxPairs: FxPair[] = [];
+  const pairKeys = new Set<string>();
 
-    quantity: position.quantity.toFixed(10),
-    costBasis: position.costBasis.toFixed(2),
-    averageCost: position.averageCost.toFixed(2),
+  for (const position of valuedPositions) {
+    try {
+      const nativeCurrency = normalizeCurrencyCode(position.currency);
+      const baseCurrency = normalizeCurrencyCode(account.baseCurrency);
 
-    realizedPnl: position.realizedPnl.toFixed(2),
+      if (nativeCurrency === baseCurrency) {
+        continue;
+      }
 
-    currentPrice: position.currentPrice.toFixed(2),
-    currentValue: position.currentValue.toFixed(2),
-    unrealizedPnl: position.unrealizedPnl.toFixed(2),
+      const key = `${nativeCurrency}/${baseCurrency}`;
 
-    returnPct: position.returnPct?.toFixed(4) ?? null,
+      if (!pairKeys.has(key)) {
+        pairKeys.add(key);
+        fxPairs.push({
+          baseCurrency: nativeCurrency,
+          quoteCurrency: baseCurrency,
+        });
+      }
+    } catch {
+      // Invalid currencies are reported per position by the conversion helper.
+    }
+  }
 
-    priceAsOf: position.priceAsOf.toISOString(),
-  }));
+  let fxQuotes: FxQuote[] = [];
+
+  if (fxPairs.length > 0) {
+    try {
+      fxQuotes = await fxProvider.getQuotes(fxPairs);
+    } catch (error) {
+      console.error("Failed to load FX quotes for portfolio:", error);
+    }
+  }
+
+  return valuedPositions.map((position) => {
+    const baseValuation = convertValuationToBaseCurrency(
+      position,
+      account.baseCurrency,
+      fxQuotes,
+    );
+
+    return {
+      securityId: position.securityId,
+      symbol: position.symbol,
+      currency: position.currency,
+      nativeCurrency: baseValuation.nativeCurrency,
+      nativeMarketValue: baseValuation.nativeMarketValue.toFixed(2),
+      nativeCostBasis: baseValuation.nativeCostBasis.toFixed(2),
+      nativeUnrealizedPnl: baseValuation.nativeUnrealizedPnl.toFixed(2),
+      baseCurrency: baseValuation.baseCurrency,
+      baseMarketValue: baseValuation.baseMarketValue?.toFixed(2) ?? null,
+      conversionStatus: baseValuation.conversionStatus,
+      ...(baseValuation.conversionStatusReason
+        ? { conversionStatusReason: baseValuation.conversionStatusReason }
+        : {}),
+      fxQuote: baseValuation.fxQuote
+        ? {
+            ...baseValuation.fxQuote,
+            asOf: baseValuation.fxQuote.asOf.toISOString(),
+          }
+        : null,
+
+      quantity: position.quantity.toFixed(10),
+      costBasis: position.costBasis.toFixed(2),
+      averageCost: position.averageCost.toFixed(2),
+
+      realizedPnl: position.realizedPnl.toFixed(2),
+
+      currentPrice: position.currentPrice.toFixed(2),
+      currentValue: position.currentValue.toFixed(2),
+      unrealizedPnl: position.unrealizedPnl.toFixed(2),
+
+      returnPct: position.returnPct?.toFixed(4) ?? null,
+
+      priceAsOf: position.priceAsOf.toISOString(),
+    };
+  });
 }

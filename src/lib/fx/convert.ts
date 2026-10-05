@@ -22,6 +22,12 @@ export class InvalidFxRateError extends Error {
   }
 }
 
+export type FxConversion = {
+  amount: Decimal;
+  quote: FxQuote | null;
+  direction: "same" | "direct" | "inverse";
+};
+
 function parsePositiveRate(quote: FxQuote): Decimal {
   let rate: Decimal;
 
@@ -38,13 +44,13 @@ function parsePositiveRate(quote: FxQuote): Decimal {
   return rate;
 }
 
-/** Converts an amount using a direct quote or the inverse of a quote. */
-export function convertCurrency(
+/** Converts an amount and returns the quote and direction used. */
+export function convertCurrencyWithQuote(
   amount: string | Decimal,
   fromCurrency: string,
   toCurrency: string,
   quotes: FxQuote[],
-): Decimal {
+): FxConversion {
   const from = normalizeCurrencyCode(fromCurrency);
   const to = normalizeCurrencyCode(toCurrency);
   let decimalAmount: Decimal;
@@ -60,7 +66,11 @@ export function convertCurrency(
   }
 
   if (from === to) {
-    return decimalAmount;
+    return {
+      amount: decimalAmount,
+      quote: null,
+      direction: "same",
+    };
   }
 
   const directQuote = quotes.find(
@@ -70,7 +80,11 @@ export function convertCurrency(
   );
 
   if (directQuote) {
-    return decimalAmount.times(parsePositiveRate(directQuote));
+    return {
+      amount: decimalAmount.times(parsePositiveRate(directQuote)),
+      quote: directQuote,
+      direction: "direct",
+    };
   }
 
   const inverseQuote = quotes.find(
@@ -80,8 +94,27 @@ export function convertCurrency(
   );
 
   if (inverseQuote) {
-    return decimalAmount.dividedBy(parsePositiveRate(inverseQuote));
+    return {
+      amount: decimalAmount.dividedBy(parsePositiveRate(inverseQuote)),
+      quote: inverseQuote,
+      direction: "inverse",
+    };
   }
 
   throw new MissingFxRateError(from, to);
+}
+
+/** Converts an amount using a direct quote or the inverse of a quote. */
+export function convertCurrency(
+  amount: string | Decimal,
+  fromCurrency: string,
+  toCurrency: string,
+  quotes: FxQuote[],
+): Decimal {
+  return convertCurrencyWithQuote(
+    amount,
+    fromCurrency,
+    toCurrency,
+    quotes,
+  ).amount;
 }
