@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { db, pool } from "./index";
 import {
   accounts,
+  brokers,
   securities,
   transactions,
   users,
@@ -37,6 +38,23 @@ async function main() {
   // Account
   // -------------------------------------------------------------------------
 
+  let [demoBroker] = await db
+    .select()
+    .from(brokers)
+    .where(eq(brokers.code, "DEMO"))
+    .limit(1);
+
+  if (!demoBroker) {
+    [demoBroker] = await db
+      .insert(brokers)
+      .values({
+        code: "DEMO",
+        displayName: "Demo Broker",
+        metadata: { adapter: null, isDemo: true },
+      })
+      .returning();
+  }
+
   let [account] = await db
     .select()
     .from(accounts)
@@ -54,10 +72,17 @@ async function main() {
       .values({
         userId: user.id,
         name: "Demo Brokerage",
-        broker: "Demo Broker",
+        brokerId: demoBroker.id,
         accountType: "BROKERAGE",
         baseCurrency: "USD",
+        isDemo: true,
       })
+      .returning();
+  } else if (!account.isDemo || account.brokerId !== demoBroker.id) {
+    [account] = await db
+      .update(accounts)
+      .set({ brokerId: demoBroker.id, isDemo: true })
+      .where(eq(accounts.id, account.id))
       .returning();
   }
 

@@ -8,6 +8,20 @@
       "when": 1790005556599,
       "tag": "0000_tiresome_clea",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791193513587,
+      "tag": "0001_broker_account_wallet_foundation",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791209049649,
+      "tag": "0002_optimal_hitman",
+      "breakpoints": true
     }
   ]
 }
