@@ -30,7 +30,7 @@ export default async function TransactionsPage({
 
   const [transactions, securitiesList] =
     await Promise.all([
-      getTransactions(accountId),
+      getTransactions(user.id, accountId),
       db.select().from(securities),
     ]);
 

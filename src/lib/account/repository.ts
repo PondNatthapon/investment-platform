@@ -25,6 +25,7 @@ export async function getAccountForUser(
   const [account] = await db
     .select({
       id: accounts.id,
+      userId: accounts.userId,
       name: accounts.name,
       broker: accounts.broker,
       baseCurrency: accounts.baseCurrency,

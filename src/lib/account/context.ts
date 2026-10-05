@@ -1,27 +1,14 @@
 import "server-only";
 
-import {
-  getAccountForUser,
-  getUserAccounts,
-} from "./repository";
+import { requireAccountAccess } from "./access";
+import { getUserAccounts } from "./repository";
 
 export async function getCurrentAccount(
   userId: string,
   requestedAccountId?: string,
 ) {
   if (requestedAccountId) {
-    const account = await getAccountForUser(
-      requestedAccountId,
-      userId,
-    );
-
-    if (!account) {
-      throw new Error(
-        "Requested investment account was not found.",
-      );
-    }
-
-    return account;
+    return requireAccountAccess(userId, requestedAccountId);
   }
 
   const accounts = await getUserAccounts(userId);

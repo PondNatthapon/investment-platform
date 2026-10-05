@@ -24,6 +24,7 @@ export default async function DashboardPage({
   );
 
   const positions = await getPortfolioValuation(
+    user.id,
     account.id,
   );
 

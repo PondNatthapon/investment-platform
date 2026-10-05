@@ -6,6 +6,7 @@ import { calculateValuation } from "./valuation";
 
 import { getMarketDataProvider } from "@/lib/market-data/provider";
 import type { MarketDataProvider } from "@/lib/market-data/types";
+import { requireAccountAccess } from "@/lib/account/access";
 
 export type PortfolioPositionDTO = {
   securityId: string;
@@ -26,8 +27,10 @@ export type PortfolioValuationDTO = PortfolioPositionDTO & {
 };
 
 export async function getPortfolio(
+  userId: string,
   accountId: string,
 ): Promise<PortfolioPositionDTO[]> {
+  await requireAccountAccess(userId, accountId);
   const transactions =
     await getAccountTransactions(accountId);
 
@@ -45,9 +48,11 @@ export async function getPortfolio(
 }
 
 export async function getPortfolioValuation(
+  userId: string,
   accountId: string,
   provider: MarketDataProvider = getMarketDataProvider(),
 ): Promise<PortfolioValuationDTO[]> {
+  await requireAccountAccess(userId, accountId);
   const transactions =
     await getAccountTransactions(accountId);
 

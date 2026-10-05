@@ -5,7 +5,7 @@ import Decimal from "decimal.js";
 import { db } from "@/db";
 import { transactions } from "@/db/schema";
 
-import { getUserAccounts } from "@/lib/account/repository";
+import { requireAccountAccess } from "@/lib/account/access";
 import { getAccountTransactions } from "@/lib/portfolio/repository";
 import { calculatePositions } from "@/lib/portfolio/engine";
 
@@ -17,8 +17,10 @@ import {
 import type { CreateTransactionInput } from "./schema";
 
 export async function getTransactions(
+  userId: string,
   accountId: string,
 ) {
+  await requireAccountAccess(userId, accountId);
   return getAccountTransactionsForList(accountId);
 }
 
@@ -26,15 +28,7 @@ export async function createTransaction(
   userId: string,
   input: CreateTransactionInput,
 ) {
-  const userAccounts = await getUserAccounts(userId);
-
-  const account = userAccounts.find(
-    (item) => item.id === input.accountId,
-  );
-
-  if (!account) {
-    throw new Error("Investment account not found.");
-  }
+  await requireAccountAccess(userId, input.accountId);
 
   const security = await getSecurityById(input.securityId);
 
