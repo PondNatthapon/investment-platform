@@ -44,7 +44,7 @@ jobs:
         run: git diff --check
 
       - name: Run unit tests
-        run: node --import tsx --test $(rg --files src -g '*.test.ts' | sort)
+        run: find src -type f -name '*.test.ts' -print0 | xargs -0 node --import tsx --test
 
       - name: Lint
         run: npm run lint
