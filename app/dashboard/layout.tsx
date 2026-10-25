@@ -14,6 +14,8 @@ import { Suspense } from "react";
 import { getCurrentUser } from "@/lib/auth/current-user";
 import { getUserAccounts } from "@/lib/account/repository";
   
+export const dynamic = "force-dynamic";
+
 const navigation = [
   {
     label: "Dashboard",

@@ -164,3 +164,9 @@ Portfolio และ transaction services เรียก `requireAccountAccess` 
 - อย่าเติมเงินจริงจากยอด snapshot, FX quote ปัจจุบัน, BOT/reference rate หรือการคำนวณส่วนต่างที่ไม่มีหลักฐาน
 - รักษา account authorization boundary และ Decimal precision
 - ก่อนสร้าง migration ใหม่ ให้ตรวจ snapshots/journal และอ่าน SQL ที่ generate เพราะ Drizzle อาจเสนอ rename/drop ที่ไม่รักษาข้อมูลเดิม
+
+## ผลตรวจ CI สำหรับ production build (25 ตุลาคม 2026)
+
+- PR [#1](https://github.com/PondNatthapon/investment-platform/pull/1) จบ [GitHub Actions run 4](https://github.com/PondNatthapon/investment-platform/actions/runs/40183809942) ด้วยผลสำเร็จ ชื่อ check ที่ตรงคือ `Turbopack production build`; runner ใช้ Node.js `24.21.0` และ npm `11.19.0`. ผ่านทั้ง locked install, migration consistency, whitespace, unit tests, lint, `npm run build` ด้วย Turbopack เริ่มต้น และ TypeScript check หลัง build; Webpack diagnostic ถูก skip เพราะงานหลักผ่าน
+- run แรก ๆ พบและแก้ปัญหาเฉพาะ CI: ต้อง generate Next route types ก่อนรัน `tsc` แยก, dashboard ที่อ่าน user/database ต้อง render ต่อ request และ discovery ของ tests ต้องไม่พึ่ง `rg` ที่ runner ไม่มี
+- ยังไม่ได้บังคับ required check บน `main`: GitHub integration อ่าน branch protection ได้ 403 และไม่มีคำสั่งเขียน branch protection; รายการ repository ruleset ที่เห็นว่างไม่ได้ยืนยันว่าไม่มี branch protection. ให้คงกฎเดิม แล้วเพิ่ม check `Turbopack production build` ใน GitHub Settings → Branches (หรือ Rulesets)

@@ -176,3 +176,9 @@ Define a rule from the user/account timezone and update transaction date parsing
 - Do not manufacture financial history from snapshots, current FX quotes, BOT/reference rates, or unexplained differences.
 - Preserve the account authorization boundary and Decimal precision.
 - Before generating a migration, inspect the current snapshots/journal and carefully review generated SQL. Drizzle may propose renames/drops that do not preserve existing data.
+
+## Production build CI verification (October 25, 2026)
+
+- Pull request [#1](https://github.com/PondNatthapon/investment-platform/pull/1) completed [GitHub Actions run 4](https://github.com/PondNatthapon/investment-platform/actions/runs/40183809942) successfully. The exact check context is `Turbopack production build`; the runner used Node.js `24.21.0` and npm `11.19.0`. Locked installation, migration consistency, whitespace check, unit tests, lint, the default `npm run build` (Turbopack), and post-build TypeScript check all passed. The Webpack diagnostic was skipped after the default job succeeded.
+- The first runs exposed and fixed CI-specific issues: Next route types must be generated before standalone `tsc`; the database-backed dashboard must render per request; and test discovery must not depend on `rg` being installed on GitHub runners.
+- Required-check enforcement on `main` is still pending. The connected GitHub integration returned 403 for branch-protection reads and offers no branch-protection write operation. A visible empty repository ruleset list is not proof that no branch protection exists. Preserve existing settings and add the exact `Turbopack production build` check in GitHub Settings → Branches (or Rulesets).
