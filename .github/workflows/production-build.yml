@@ -1,0 +1,81 @@
+name: Production build verification
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  production-build:
+    name: Turbopack production build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # src/db/index.ts requires a URL at module load. This inert local URL
+      # supplies configuration without exposing or contacting a real database.
+      DATABASE_URL: postgresql://localhost:5432/investment_platform_ci
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Check Drizzle migrations
+        run: npm run db:check
+
+      - name: Check patch whitespace
+        run: git diff --check
+
+      - name: Run unit tests
+        run: node --import tsx --test $(rg --files src -g '*.test.ts' | sort)
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build with the default bundler
+        run: npm run build
+
+  webpack-diagnostic:
+    name: Webpack diagnostic build
+    if: ${{ always() && (github.event_name == 'workflow_dispatch' || needs.production-build.result == 'failure') }}
+    needs: production-build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      DATABASE_URL: postgresql://localhost:5432/investment_platform_ci
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+          cache: npm
+
+      - name: Install locked dependencies
+        run: npm ci
+
+      - name: Build with Webpack for comparison
+        run: npx next build --webpack
