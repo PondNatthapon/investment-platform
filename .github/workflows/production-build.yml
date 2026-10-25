@@ -26,19 +26,16 @@ jobs:
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24.21.0
           cache: npm
 
       - name: Install locked dependencies
         run: npm ci
-
-      - name: Typecheck
-        run: npx tsc --noEmit
 
       - name: Check Drizzle migrations
         run: npm run db:check
@@ -55,6 +52,9 @@ jobs:
       - name: Build with the default bundler
         run: npm run build
 
+      - name: Typecheck generated route types
+        run: npx tsc --noEmit
+
   webpack-diagnostic:
     name: Webpack diagnostic build
     if: ${{ always() && (github.event_name == 'workflow_dispatch' || needs.production-build.result == 'failure') }}
@@ -66,10 +66,10 @@ jobs:
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 24.21.0
           cache: npm
